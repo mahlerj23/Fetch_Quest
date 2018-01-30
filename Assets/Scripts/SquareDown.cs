@@ -4,90 +4,84 @@ using UnityEngine;
 
 public class SquareDown : MonoBehaviour
 {
-    public bool canGoHere;
-    public GameObject player;
     public Vector3 endPoint;
+
+    bool canGoHereDog;
+    bool canGoHereCatcher;
 
     const float TILE_SIZE = 1.6f;
     float tiles = 12f;
-    bool hasEntered = false;
-    bool hasExited = false;
-    bool hasStayed = false;
 
-    void LateUpdate()
+    void OnTriggerEnter2D(Collider2D other)
     {
-        hasEntered = false;
-        hasExited = false;
-        hasStayed = false;
-    }
-
-    void OnTriggerExit2D(Collider2D other)
-    {
-        if (!hasExited)
+        if (gameObject.tag == "House" || gameObject.tag == "Pool")
         {
-            hasExited = true;
-            if (other.gameObject.tag == "Dog" || other.gameObject.tag == "Catcher")
-            {
-                canGoHere = false;
-            }
+            canGoHereDog = false;
+            canGoHereCatcher = false;
         }
     }
 
     void OnTriggerStay2D(Collider2D other)
     {
-        if (!hasStayed)
+        if (other.gameObject.name == "DogMove")
         {
-            hasStayed = true;
-            if(other.gameObject.tag == "Player")
-            {
-                canGoHere = true;
-            }
-            if (gameObject.tag == "House" || gameObject.tag == "Pool")
-            {
-                canGoHere = false;
-            }
+            //gameObject.GetComponent<SpriteRenderer>().color = new Color(1f, 1f, 1f, .4f);
+            canGoHereDog = true;
+        }
+        if (other.gameObject.name == "CatcherMove")
+        {
+            //gameObject.GetComponent<SpriteRenderer>().color = new Color(1f, 1f, 1f, .4f);
+            canGoHereCatcher = true;
         }
     }
 
-    void OnTriggerEnter2D(Collider2D other)
+    void OnTriggerExit2D(Collider2D other)
     {
-        if (!hasEntered)
+        if (other.gameObject.name == "DogMove")
         {
-            hasEntered = true;
-            if (other.gameObject.tag == "Player")
-            {
-                canGoHere = true;
-            }
-            if (gameObject.tag == "House" || gameObject.tag == "Pool")
-            {
-                canGoHere = false;
-            }
+            //gameObject.GetComponent<SpriteRenderer>().color = new Color(1f, 1f, 1f, 0f);
+            canGoHereDog = false;
         }
+        if (other.gameObject.name == "CatcherMove")
+        {
+            //gameObject.GetComponent<SpriteRenderer>().color = new Color(1f, 1f, 1f, 0f);
+            canGoHereCatcher = false;
+        }
+
     }
 
     void OnMouseDown()
     {
-        Debug.Log(gameObject.transform + " " + canGoHere);
-        if (canGoHere)
+        StartCoroutine(WaitForOne());
+        if (canGoHereDog && GameObject.Find("GridManager").GetComponent<TakeTurns>().isDogTurn)
         {
-            for (int row = 0; row < tiles; row++)
+            FindEndPoint();
+        }
+        else if(canGoHereCatcher && !(GameObject.Find("GridManager").GetComponent<TakeTurns>().isDogTurn))
+        {
+            FindEndPoint();
+        }
+    }
+
+    IEnumerator WaitForOne()
+    {
+        yield return new WaitForSeconds(1f);
+    }
+
+    void FindEndPoint()
+    {
+        Debug.Log(gameObject);
+        for (int row = 0; row < tiles; row++)
+        {
+            for (int col = 0; col < tiles; col++)
             {
-                for (int col = 0; col < tiles; col++)
+                if (gameObject.name.Contains(row + "_" + col))
                 {
-                    if (gameObject.name.Contains(row + "_" + col))
-                    {
-                        endPoint = new Vector3(row * TILE_SIZE, col * TILE_SIZE, 0);
-                    }
+                    endPoint = new Vector3(row * TILE_SIZE, col * TILE_SIZE, 0);
                 }
             }
-            if (GameObject.Find("GameManager").GetComponent<TakeTurns>().isDogTurn)
-            {
-                GameObject.Find("Dog").GetComponent<PlayerMovement>().Move(gameObject);
-            }
-            else
-            {
-                GameObject.Find("Catcher").GetComponent<PlayerMovement>().Move(gameObject);
-            }
         }
+        GameObject.Find("GridManager").GetComponent<PlayerMovement>().GetStartPoint();
+        GameObject.Find("GridManager").GetComponent<PlayerMovement>().Move(gameObject);
     }
 }

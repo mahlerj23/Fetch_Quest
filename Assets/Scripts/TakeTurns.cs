@@ -4,87 +4,128 @@ using UnityEngine;
 
 public class TakeTurns : MonoBehaviour {
     
-    float maxMoves;
-    float currentMove;
+    int maxMoves;
 
-    const float MAX_BONES = 4;
-    float collectedBones = 0;
-
-    bool dogCaught = false;
+    const float TILE_SIZE = 1.6f;
+    const float MAX_BONES = 4f;
+    float collectedBones = 0f;
+    
     public bool isDogTurn;
+    bool ended;
 
     void Start()
     {
         CoinFlip();
+        StartCoroutine(UpdateState());
+    }
+
+    void Update()
+    {
+        if (!ended)
+        {
+            CheckEndGame();
+        }
     }
 
     void CoinFlip()
     {
         int rand = Random.Range(0, 100);
-        if(rand < 50)
+        if (rand < 50)
         {
-            PlayerIsDog();
+            isDogTurn = true;
         }
         else
         {
-            PlayerIsCatcher();
+            isDogTurn = false;
         }
     }
 
-    void PlayerIsDog()
+    IEnumerator UpdateState()
     {
-        isDogTurn = true;
-        maxMoves = 3f;
-        while(true)
-        {
-            if(collectedBones == MAX_BONES)
-            {
-                Debug.Log("Dog wins!");
-                break;
-            }
-            else if (currentMove < maxMoves)
-            {
-                StartCoroutine(GameObject.Find("Dog").GetComponent<PlayerMovement>().WaitForKeyDown());
-                currentMove++;
-            }
-            else if (currentMove == maxMoves)
-            {
-                isDogTurn = false;
-                currentMove = 0;
-                PlayerIsCatcher();
-            }
-        }
-    }
-
-    void PlayerIsCatcher()
-    {
-        isDogTurn = false;
-        maxMoves = 2f;
         while (true)
         {
-            if(dogCaught)
+            if (isDogTurn)
             {
-                Destroy(GameObject.Find("Dog"));
+                yield return StartCoroutine(DogTurn());
             }
-            if (currentMove < maxMoves)
+            else if (!isDogTurn)
             {
-                StartCoroutine(GameObject.Find("Catcher").GetComponent<PlayerMovement>().WaitForKeyDown());
-                currentMove++;
-            }
-            else if (currentMove == maxMoves)
-            {
-                isDogTurn = true;
-                currentMove = 0;
-                PlayerIsDog();
+                yield return StartCoroutine(CatcherTurn());
             }
         }
     }
-    void OnTriggerEnter2D(Collider2D other)
+
+    IEnumerator DogTurn()
     {
-        if (other.gameObject.tag == "Player")
+        maxMoves = 3;
+        Debug.Log(GameObject.Find("Dog") + " Start");
+        for(int i = 0; i < maxMoves; i++)
         {
-            Debug.Log("Catcher wins!");
-            dogCaught = true;
+            Debug.Log("Move: " + (i + 1) + "/" + maxMoves);
+            yield return StartCoroutine(WaitForMouseDown());
+            yield return null;
+        }
+        Debug.Log("Waiting for player to hit space");
+        yield return StartCoroutine(WaitForTurnEnd());
+    }
+
+    IEnumerator CatcherTurn()
+    {
+        maxMoves = 2;
+        Debug.Log(GameObject.Find("Catcher") + " Start");
+        for (int i = 0; i < maxMoves; i++)
+        {
+            Debug.Log("Move: " + (i + 1) + "/" + maxMoves);
+            yield return StartCoroutine(WaitForMouseDown());
+            yield return null;
+        }
+        Debug.Log("Waiting for player to hit space");
+        yield return StartCoroutine(WaitForTurnEnd());
+     }
+
+    IEnumerator WaitForMouseDown()
+    {
+        while (!Input.GetKeyDown(KeyCode.Mouse0))
+        {
+            yield return null;
+        }
+    }
+
+    IEnumerator WaitForTurnEnd()
+    {
+        while(!Input.GetKeyDown(KeyCode.Space))
+        {
+            yield return null;
+        }
+        ChangePlayerTurn();
+    }
+
+    void ChangePlayerTurn()
+    {
+        if(isDogTurn)
+        {
+            isDogTurn = false;
+        }
+        else if(!isDogTurn)
+        {
+            isDogTurn = true;
+        }
+    }
+
+    void CheckEndGame()
+    {
+        float distanceApart = Vector3.Distance(GameObject.FindGameObjectWithTag("Dog").transform.position, GameObject.FindGameObjectWithTag("Catcher").transform.position);
+        if (collectedBones == MAX_BONES)
+        {
+            ended = true;
+            Debug.Log("Dog Wins");
+            Application.Quit();
+        }
+        else if (Mathf.Abs(distanceApart) <= TILE_SIZE + .1f)
+        {
+            ended = true;
+            Debug.Log("Catcher Wins");
+            Application.Quit();
         }
     }
 }

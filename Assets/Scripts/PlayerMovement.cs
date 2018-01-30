@@ -4,8 +4,6 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour {
 
-    public GameObject player;
-
     float speed = 0.75f;
     float startTime;
     float journeyLength;
@@ -13,24 +11,25 @@ public class PlayerMovement : MonoBehaviour {
     Vector3 endPoint;
     bool isMoving = false;
 
-    void Start()
-    {
-        StartCoroutine(WaitForKeyDown());
-    }
-
     void Update()
     {
         CheckMoving();
     }
 
-    public IEnumerator WaitForKeyDown()
+    public void GetStartPoint()
     {
-        yield return new WaitWhile(() => !Input.GetKeyDown(KeyCode.Mouse0));
+        if (GameObject.Find("GridManager").GetComponent<TakeTurns>().isDogTurn)
+        {
+            startPoint = GameObject.FindGameObjectWithTag("Dog").transform;
+        }
+        else if(!(GameObject.Find("GridManager").GetComponent<TakeTurns>().isDogTurn))
+        {
+            startPoint = GameObject.FindGameObjectWithTag("Catcher").transform;
+        }
     }
 
     public void Move(GameObject obj)
     {
-        startPoint = player.transform;
         endPoint = obj.GetComponent<SquareDown>().endPoint;
         startTime = Time.time;
         journeyLength = Vector3.Distance(startPoint.position, endPoint);
@@ -43,8 +42,15 @@ public class PlayerMovement : MonoBehaviour {
         {
             float distanceCovered = (Time.time - startTime) * speed;
             float fractionDistance = distanceCovered / journeyLength;
-            player.transform.position = Vector3.Lerp(startPoint.position, endPoint, fractionDistance);
-            if(fractionDistance >= 1f)
+            if(GameObject.Find("GridManager").GetComponent<TakeTurns>().isDogTurn)
+            {
+                GameObject.FindGameObjectWithTag("Dog").transform.position = Vector3.Lerp(startPoint.position, endPoint, fractionDistance);
+            }
+            else if(!(GameObject.Find("GridManager").GetComponent<TakeTurns>().isDogTurn))
+            {
+                GameObject.FindGameObjectWithTag("Catcher").transform.position = Vector3.Lerp(startPoint.position, endPoint, fractionDistance);
+            }
+            if (fractionDistance >= 1f)
             {
                 isMoving = false;
             }

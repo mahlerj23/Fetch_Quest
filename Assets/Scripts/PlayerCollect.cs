@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerCollect : MonoBehaviour {
-
+    
 	void OnTriggerEnter2D(Collider2D other)
 	{
-		if (other.gameObject.CompareTag ("Bone")) 
+		if (other.gameObject.name == "DogTrigger") 
 		{
-			other.gameObject.SetActive (false);
+            gameObject.GetComponent<SpriteRenderer>().enabled = false;
 		}
 	}
 }
